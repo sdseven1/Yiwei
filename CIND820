@@ -1,8 +1,10 @@
 import pandas as pd
 import warnings
+pd.set_option('display.max_columns',25)
 warnings.filterwarnings('ignore')
 data = pd.read_excel('C:\\Users\\trans\\Desktop\\CIND820 _Project\\default_of_credit_card_clients.xls')
 data.info()
+data.describe(include='all')
 data.rename(columns={'PAY_0':'PAY_1','default payment next month':'def_pay'},inplace=True)
 
 import matplotlib.pyplot as plt
