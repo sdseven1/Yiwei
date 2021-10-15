@@ -2,12 +2,26 @@ import pandas as pd
 import warnings
 pd.set_option('display.max_columns',25)
 warnings.filterwarnings('ignore')
+
 data = pd.read_excel('C:\\Users\\trans\\Desktop\\CIND820 _Project\\default_of_credit_card_clients.xls')
 data.info()
-data.describe(include='all')
+data.describe(include='all').T
 data.rename(columns={'PAY_0':'PAY_1','default payment next month':'def_pay'},inplace=True)
 
+
 import matplotlib.pyplot as plt
-plt.figure(figsize=(10,6))
-data.groupby('def_pay')['AGE'].hist(legend=True)
+import seaborn as sns
+
+plt.figure(figsize=(6,4))
+
+ax = sns.countplot(x='def_pay', data=data, palette="rocket")
+
+plt.xlabel('Default?', fontsize= 12)
+plt.ylabel("# of Clients", fontsize= 12)
+plt.ylim(0,30000)
+plt.xticks([0,1], ['No', 'Yes'], fontsize = 11)
+
+for p in ax.patches:
+    ax.annotate((p.get_height()), (p.get_x()+0.32, p.get_height()+1000))
+    
 plt.show()
