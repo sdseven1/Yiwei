@@ -77,17 +77,48 @@ data.loc[:,'EDUCATION'] = data.loc[:,'EDUCATION'].replace(0,5)
 data.loc[:,'EDUCATION'] = data.loc[:,'EDUCATION'].replace(6,5)
 plt.figure(figsize=(12,4))
 
-data['def_pay'].groupby(data['EDUCATION']).value_counts(normalize = True)
+plt.figure(figsize=(12,4))
 
-ax = sns.countplot(data = data, x = 'EDUCATION', hue="def_pay", palette = 'rocket')
+ax = sns.barplot(x = "EDUCATION", y = "def_pay", data = data, palette = 'rocket', ci = None)
 
-plt.xlabel("Education", fontsize= 12)
-plt.ylabel("# of Clients", fontsize= 12)
-plt.ylim(0,12000)
+plt.ylabel("% of Default", fontsize= 12)
+plt.ylim(0,0.5)
 plt.xticks([0,1,2,3,4],['Grad School','University','High School','Others','Unknown'], fontsize = 11)
 
 for p in ax.patches:
-    ax.annotate((p.get_height()), (p.get_x()+0.11, p.get_height()+500))
+    ax.annotate("%.2f" %(p.get_height()), (p.get_x()+0.30, p.get_height()+0.03),fontsize=13)
+
+plt.show()
+
+
+
+plt.figure(figsize=(12,4))
+
+ax = sns.barplot(x = "MARRIAGE", y = "def_pay", data = data, palette = 'rocket', ci = None)
+
+plt.ylabel("% of Default", fontsize= 12)
+plt.ylim(0,0.5)
+plt.xticks([0,1,2,3],['Unknown', 'Married', 'Single', 'Divorce'], fontsize = 11)
+
+for p in ax.patches:
+    ax.annotate("%.2f" %(p.get_height()), (p.get_x()+0.30, p.get_height()+0.03),fontsize=13)
+
+plt.show()
+
+
+
+plt.figure(figsize=(15,12))
+
+pay_x_fts = ['PAY_1', 'PAY_2', 'PAY_3', 'PAY_4', 'PAY_5', 'PAY_6']
+for i,col in enumerate(pay_x_fts):    
+    plt.subplot(3,2,i + 1)
+    ax = sns.barplot(x = col, y = "def_pay", data = data, palette = 'rocket', ci = None)
+    plt.ylabel("% of Default", fontsize= 12)
+    plt.ylim(0,1.2)
+    plt.tight_layout()
+    
+    for p in ax.patches:
+        ax.annotate("%.2f" %(p.get_height()), (p.get_x()+0.09, p.get_height()+0.03),fontsize=13)
 
 plt.show()
 
