@@ -9,6 +9,7 @@ data.describe(include='all').T
 data.rename(columns={'PAY_0':'PAY_1','default payment next month':'def_pay'},inplace=True)
 
 
+
 import matplotlib.pyplot as plt
 import seaborn as sns
 
@@ -25,3 +26,70 @@ for p in ax.patches:
     ax.annotate((p.get_height()), (p.get_x()+0.32, p.get_height()+1000))
     
 plt.show()
+
+
+
+
+plt.figure(figsize=(7,5))
+
+data['def_pay'].value_counts().plot(kind='pie',labels = ['',''], autopct='%1.1f%%', colors = ['indigo','salmon'], explode = [0,0.05], textprops = {"fontsize":15})
+
+plt.legend(labels=['No Default', 'Default'])
+plt.show()
+
+
+
+
+plt.figure(figsize=(12,4))
+
+ax = sns.countplot(data=data, x = 'SEX', hue="def_pay", palette = 'rocket')
+
+plt.xlabel("Sex", fontsize= 12)
+plt.ylabel("# of Clients", fontsize= 12)
+plt.ylim(0,20000)
+plt.xticks([0,1],['Male', 'Female'], fontsize = 11)
+
+for p in ax.patches:
+    ax.annotate((p.get_height()), (p.get_x()+0.16, p.get_height()+1000))
+
+plt.show()
+
+
+
+
+plt.figure(figsize=(10,4))
+
+ax = sns.barplot(x = "SEX", y = "def_pay", data=data, palette = 'rocket', ci = None)
+
+plt.ylabel("% of Default", fontsize= 12)
+plt.ylim(0,0.5)
+plt.xticks([0,1],['Male', 'Female'], fontsize = 12)
+
+for p in ax.patches:
+    ax.annotate("%.2f" %(p.get_height()), (p.get_x()+0.35, p.get_height()+0.03),fontsize=13)
+
+plt.show()
+
+
+
+
+data.loc[:,'EDUCATION'] = data.loc[:,'EDUCATION'].replace(0,5)
+data.loc[:,'EDUCATION'] = data.loc[:,'EDUCATION'].replace(6,5)
+plt.figure(figsize=(12,4))
+
+data['def_pay'].groupby(data['EDUCATION']).value_counts(normalize = True)
+
+ax = sns.countplot(data = data, x = 'EDUCATION', hue="def_pay", palette = 'rocket')
+
+plt.xlabel("Education", fontsize= 12)
+plt.ylabel("# of Clients", fontsize= 12)
+plt.ylim(0,12000)
+plt.xticks([0,1,2,3,4],['Grad School','University','High School','Others','Unknown'], fontsize = 11)
+
+for p in ax.patches:
+    ax.annotate((p.get_height()), (p.get_x()+0.11, p.get_height()+500))
+
+plt.show()
+
+
+
