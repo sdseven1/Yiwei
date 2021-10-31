@@ -124,21 +124,35 @@ plt.show()
 
 
 
-#The first model is Random Forest
+#Logistic model
 from sklearn.model_selection import train_test_split
-X = data.drop('def_pay', axis = 1)
-Y = data['def_pay']
+from sklearn.preprocessing import StandardScaler
+from sklearn.metrics import confusion_matrix,ConfusionMatrixDisplay,classification_report,plot_roc_curve,accuracy_score
+from sklearn.linear_model import LogisticRegression
+x= data.drop(['def_pay'],1)
+y = data['def_pay']
+x_train,x_test, y_train, y_test = train_test_split(x,y,test_size=0.20, random_state=1)
+sc = StandardScaler()
+x_train = sc.fit_transform(x_train)
+x_test = sc.transform(x_test)
 
-X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size = 0.2, random_state = 23, stratify = Y)
 
-from sklearn.ensemble import RandomForestClassifier
-from sklearn import metrics
-rf_model = RandomForestClassifier(random_state = 23)
+def res(y_test_valid,y_train_valid):
+    cm_log = confusion_matrix(y_test,y_test_valid)
+    ConfusionMatrixDisplay(cm_log).plot()
+    print(classification_report(y_test,y_test_valid))
+    print('train_accuracy:',accuracy_score(y_train,y_train_valid))
+    print('test_accuracy:',accuracy_score(y_test,y_test_valid))
 
-rf_model.fit(X_train, Y_train)
-pred_rf = rf_model.predict(X_test)
 
-print("Test Accuracy: ",metrics.accuracy_score(Y_test, pred_rf))
+log_model= LogisticRegression()
+log_model.fit(x_train,y_train)
+y_pred_log = log_model.predict(x_test)
+y_pred_train = log_model.predict(x_train)
+res(y_pred_log,y_pred_train)
+
+plot_roc_curve(log_model,x_test,y_test)
+plt.show()
 
 
 
