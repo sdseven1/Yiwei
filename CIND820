@@ -124,6 +124,7 @@ plt.show()
 
 
 
+#The first model is Random Forest
 from sklearn.model_selection import train_test_split
 X = data.drop('def_pay', axis = 1)
 Y = data['def_pay']
@@ -138,3 +139,6 @@ rf_model.fit(X_train, Y_train)
 pred_rf = rf_model.predict(X_test)
 
 print("Test Accuracy: ",metrics.accuracy_score(Y_test, pred_rf))
+
+
+
