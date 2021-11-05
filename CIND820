@@ -30,3 +30,11 @@ plt.show()
 
 
 
+
+#Decision Tree
+from sklearn.tree import DecisionTreeClassifier
+dec_model = DecisionTreeClassifier()
+dec_model.fit(x_train,y_train)
+y_pred_dec = dec_model.predict(x_test)
+y_pred_dec_train = dec_model.predict(x_train)
+res(y_pred_dec,y_pred_dec_train)
