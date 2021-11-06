@@ -1,8 +1,31 @@
-#Logistic model
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import StandardScaler
-from sklearn.metrics import confusion_matrix,ConfusionMatrixDisplay,classification_report,plot_roc_curve,accuracy_score
 from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import confusion_matrix,classification_report,accuracy_score
+defaulters = data.copy()
+df_X = defaulters.drop(['def_pay','AGE'], axis=1)
+df_y = defaulters.def_pay
+
+X_train, X_test, y_train, y_test = train_test_split(df_X, df_y, test_size=0.2, random_state=10)
+
+model1 = LogisticRegression()
+model1.fit(X_train, y_train)
+
+y_pred = model1.predict(X_test)
+
+print(classification_report(y_pred, y_test))
+print(confusion_matrix(y_pred, y_test))
+print('\nAccuracy Score for model1: ', accuracy_score(y_pred,y_test))
+#We can see that All the examples are predicted to be negative to default 
+#payment next month with 78% accuracy whereas in the dataset we have 
+#980 observations that are expected to default payment.
+
+
+
+
+
+#Logistic model
+from sklearn.preprocessing import StandardScaler
+from sklearn.metrics import ConfusionMatrixDisplay,plot_roc_curve
 x= data.drop(['def_pay'],1)
 y = data['def_pay']
 x_train,x_test, y_train, y_test = train_test_split(x,y,test_size=0.20, random_state=1)
@@ -31,6 +54,7 @@ plt.show()
 
 
 
+
 #Decision Tree
 from sklearn.tree import DecisionTreeClassifier
 dec_model = DecisionTreeClassifier()
@@ -38,3 +62,103 @@ dec_model.fit(x_train,y_train)
 y_pred_dec = dec_model.predict(x_test)
 y_pred_dec_train = dec_model.predict(x_train)
 res(y_pred_dec,y_pred_dec_train)
+
+
+#Using the best parameter from GridSearchCV best parameters
+from sklearn.model_selection import GridSearchCV
+parameters = {'max_depth':[1,2,3,4,5,6],'min_samples_split':[3,4,5,6,7],'min_samples_leaf':[1,2,3,4,5,6]}
+tree = GridSearchCV(dec_model, parameters,cv=10)
+tree.fit(x_train,y_train)
+tree.best_params_
+
+#We know that Decision tree will have high variance due to which the model overfit 
+#So we can reduce this.
+dec_model1 = DecisionTreeClassifier(max_depth=3,min_samples_split=6,min_samples_leaf=3)
+dec_model1.fit(x_train,y_train)
+y_pred_dec1 = dec_model1.predict(x_test)
+y_pred_dec_train1 = dec_model1.predict(x_train)
+res(y_pred_dec1,y_pred_dec_train1)
+
+
+
+
+
+#Random Forest
+from sklearn.ensemble import RandomForestClassifier
+rf_model = RandomForestClassifier(random_state=1)
+rf_model.fit(x_train,y_train)
+y_pred_rf = rf_model.predict(x_test)
+y_pred_rf_train = rf_model.predict(x_train)
+res(y_pred_rf,y_pred_rf_train)
+
+
+#Using the best parameter from GridSearchCV best parameters
+parameters = {'n_estimators':[60,70,80],'max_depth':[1,2,3,4,5,6],'min_samples_split':[3,4,5,6,7], 'min_samples_leaf':[1,2,3,4,5,6]}
+frt = GridSearchCV(rf_model, parameters, cv=10, n_jobs=-1)
+frt.fit(x_train,y_train)
+frt.best_params_
+
+
+rf_model = RandomForestClassifier(n_estimators=70, max_depth=6, min_samples_leaf=1, min_samples_split=7)
+rf_model.fit(x_train,y_train)
+y_pred_rf = rf_model.predict(x_test)
+y_pred_rf_train = rf_model.predict(x_train)
+res(y_pred_rf,y_pred_rf_train)
+
+#Decision trees frequently perform well on imbalanced data. Using RandomForest will be a better idea.
+
+
+
+
+#Finding the K value
+from sklearn.neighbors import KNeighborsClassifier
+import numpy as np
+error = []
+
+for i in range(1,21,2):
+    knn =  KNeighborsClassifier(n_neighbors=i)
+    knn.fit(x_train,y_train)
+    preds = knn.predict(x_test)
+    error.append(np.mean(preds!=y_test))
+
+plt.plot(range(1,21,2), error, linestyle = 'dashed', marker ='o', mfc= 'red')
+
+#Using the elbow graph we can see that the k=5 will perform better in the first place so impute k = 5
+knn_model = KNeighborsClassifier(n_neighbors=5)
+knn_model.fit(x_train,y_train)
+y_pred_knn = knn_model.predict(x_test)
+y_pred_knn_train = knn_model.predict(x_train)
+
+res(y_pred_knn,y_pred_knn_train)
+
+
+
+
+#Naive Bayes
+from sklearn.naive_bayes import GaussianNB
+nb_model = GaussianNB()
+nb_model.fit(x_train,y_train)
+y_pred_nb = nb_model.predict(x_test)
+y_pred_nb_train = nb_model.predict(x_train)
+res(y_pred_nb,y_pred_nb_train)
+
+
+
+
+
+from sklearn.model_selection import cross_val_score
+from sklearn.ensemble import BaggingClassifier
+knn = KNeighborsClassifier()
+lg = LogisticRegression()
+dt = DecisionTreeClassifier()
+rf = RandomForestClassifier()
+
+clf_array = [knn, lg, dt, rf]
+
+for clf in clf_array:
+    cc_scores = cross_val_score(clf, x, y, cv=10, n_jobs=-1)
+    bagging_clf = BaggingClassifier(clf, max_samples=0.25, max_features=10, random_state=3)
+    bagging_scores = cross_val_score(bagging_clf, x, y, cv=10, n_jobs=-1)
+    
+    print("Accuracy of: {1:.3f}, std: (+/-) {2:.3f} [{0}]".format(clf.__class__.__name__,cc_scores.mean(), cc_scores.std()))
+    print("Accuracy of: {1:.3f}, std: (+/-) {2:.3f} [Bagging {0}]\n".format(clf.__class__.__name__,bagging_scores.mean(), bagging_scores.std()))
