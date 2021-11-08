@@ -1,16 +1,39 @@
+#Splitting data into train and test
+#We split this data into 75% and 25% for train and test sets respectively 
+#using sklearn.model_selection train_test_split.
+#we transform the data.
+#we use x_train and x_test to transform them into xtrain_scaler 
+#and xtest_scalar because there are many observations with large ranges 
+#such as ‘TOTAL_PAY’, ‘LIMIT_BALANCE’ and ‘TOTAL_BILL’.
+#We are using MinMaxScaler to scale our variables and convert them in 
+#the range 0-1.
 from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import MinMaxScaler
+x = data[['LIMIT_BAL', 'SEX', 'EDUCATION', 'MARRIAGE', 'AGE', 'PAY_1', 'PAY_2',
+       'PAY_3', 'PAY_4', 'PAY_5', 'PAY_6', 'BILL_AMT1', 'BILL_AMT2',
+       'BILL_AMT3', 'BILL_AMT4', 'BILL_AMT5', 'BILL_AMT6', 'PAY_AMT1',
+       'PAY_AMT2', 'PAY_AMT3', 'PAY_AMT4', 'PAY_AMT5', 'PAY_AMT6']]
+y = data['def_pay']
+
+x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.25, random_state=3)
+
+xtrain_scaler = MinMaxScaler().fit_transform(x_train)
+xtest_scaler = MinMaxScaler().fit_transform(x_test)
+
+
+
+
+
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import confusion_matrix,classification_report,accuracy_score
 defaulters = data.copy()
-df_X = defaulters.drop(['def_pay','AGE'], axis=1)
+df_x = defaulters.drop(['def_pay','AGE'], axis=1)
 df_y = defaulters.def_pay
 
-X_train, X_test, y_train, y_test = train_test_split(df_X, df_y, test_size=0.2, random_state=10)
-
 model1 = LogisticRegression()
-model1.fit(X_train, y_train)
+model1.fit(x_train, y_train)
 
-y_pred = model1.predict(X_test)
+y_pred = model1.predict(x_test)
 
 print(classification_report(y_pred, y_test))
 print(confusion_matrix(y_pred, y_test))
@@ -24,32 +47,47 @@ print('\nAccuracy Score for model1: ', accuracy_score(y_pred,y_test))
 
 
 #Logistic model
-from sklearn.preprocessing import StandardScaler
-from sklearn.metrics import ConfusionMatrixDisplay,plot_roc_curve
-x= data.drop(['def_pay'],1)
-y = data['def_pay']
-x_train,x_test, y_train, y_test = train_test_split(x,y,test_size=0.20, random_state=1)
-sc = StandardScaler()
-x_train = sc.fit_transform(x_train)
-x_test = sc.transform(x_test)
+from sklearn.model_selection import GridSearchCV
 
+c_val = [0.001,0.01,0.1,0.5,1.0]
 
-def res(y_test_valid,y_train_valid):
-    cm_log = confusion_matrix(y_test,y_test_valid)
-    ConfusionMatrixDisplay(cm_log).plot()
-    print(classification_report(y_test,y_test_valid))
-    print('train_accuracy:',accuracy_score(y_train,y_train_valid))
-    print('test_accuracy:',accuracy_score(y_test,y_test_valid))
+logreg = LogisticRegression(solver = 'liblinear')
+hyperParam = [{'C':c_val}]
 
+gsv = GridSearchCV(logreg,hyperParam,cv=5,verbose=1)
+#Fitting model with x_train and y_train
+best_model = gsv.fit(x_train, y_train)
 
-log_model= LogisticRegression()
-log_model.fit(x_train,y_train)
-y_pred_log = log_model.predict(x_test)
-y_pred_train = log_model.predict(x_train)
-res(y_pred_log,y_pred_train)
+print("Best Accuracy :",best_model.score(x_test, y_test))   
 
-plot_roc_curve(log_model,x_test,y_test)
-plt.show()
+#Transformed training and testing data
+c_val = [0.001,0.01,0.1,0.5,1.0]
+
+logreg = LogisticRegression(solver = 'liblinear')
+hyperParam = [{'C':c_val}]
+
+gsv = GridSearchCV(logreg,hyperParam,cv=5,verbose=1)
+best_model = gsv.fit(xtrain_scaler, y_train)
+#Predicting the results
+logreg_pred_mms = best_model.best_estimator_.predict(xtest_scaler)
+
+print("Best Accuracy :",best_model.score(xtest_scaler, y_test))
+
+#Confusion Matrix of model with transformed data
+from sklearn.metrics import plot_confusion_matrix
+from sklearn import metrics
+plot_confusion_matrix(gsv,xtest_scaler, y_test)
+
+conf_metr = confusion_matrix(y_test, logreg_pred_mms)
+
+print("Confusion Matrix: \n {}".format(conf_metr))
+print(metrics.classification_report(y_test,logreg_pred_mms))
+print("Accuracy:",metrics.accuracy_score(y_test, logreg_pred_mms))
+print("Recall/Sensitivity/True Positive Rate:",metrics.recall_score(y_test, logreg_pred_mms))
+print("Precision:",metrics.precision_score(y_test, logreg_pred_mms))
+
+#ROC Curve:
+metrics.plot_roc_curve(gsv, xtest_scaler, y_test)
 
 
 
@@ -57,103 +95,178 @@ plt.show()
 
 #Decision Tree
 from sklearn.tree import DecisionTreeClassifier
-dec_model = DecisionTreeClassifier()
-dec_model.fit(x_train,y_train)
-y_pred_dec = dec_model.predict(x_test)
-y_pred_dec_train = dec_model.predict(x_train)
-res(y_pred_dec,y_pred_dec_train)
+import numpy as np
 
+i = 1
+d = np.arange(1, 20, 1)
+depth = []
+for i in d:
+    dtree = DecisionTreeClassifier(max_depth=i)
+    # Fitting model with x_train and y_train
+    dtree.fit(x_train, y_train)
+    # Predicting the results
+    dtree_pred = dtree.predict(x_test)
+    depth.append(metrics.accuracy_score(y_test, dtree_pred))
 
-#Using the best parameter from GridSearchCV best parameters
-from sklearn.model_selection import GridSearchCV
-parameters = {'max_depth':[1,2,3,4,5,6],'min_samples_split':[3,4,5,6,7],'min_samples_leaf':[1,2,3,4,5,6]}
-tree = GridSearchCV(dec_model, parameters,cv=10)
-tree.fit(x_train,y_train)
-tree.best_params_
+m = max(depth)
 
-#We know that Decision tree will have high variance due to which the model overfit 
-#So we can reduce this.
-dec_model1 = DecisionTreeClassifier(max_depth=3,min_samples_split=6,min_samples_leaf=3)
-dec_model1.fit(x_train,y_train)
-y_pred_dec1 = dec_model1.predict(x_test)
-y_pred_dec_train1 = dec_model1.predict(x_train)
-res(y_pred_dec1,y_pred_dec_train1)
+print("We got max accuracy of {0} when max_depth = {1}". format(max(depth), [i+1 for i, j in enumerate(depth) if j == m]))
 
+#Transformed training and testing data
+i = 1
+d = np.arange(1, 20, 1)
+depth_mms = []
+for i in d:
+    dtree = DecisionTreeClassifier(max_depth=i)
+    dtree.fit(xtrain_scaler, y_train)
+    dtree_pred_mms = dtree.predict(xtest_scaler)
+    depth_mms.append(metrics.accuracy_score(y_test, dtree_pred_mms))
+
+m = max(depth_mms)
+
+print("We got max accuracy of {0} when max_depth = {1}". format(max(depth_mms), [i+1 for i, j in enumerate(depth_mms) if j == m]))
+
+#Confusion Matrix of model with transformed data
+plot_confusion_matrix(dtree, xtest_scaler, y_test)
+
+conf_metr = metrics.confusion_matrix(y_test, dtree_pred_mms)
+
+print("Confusion Matrix: \n {}".format(conf_metr))
+print(metrics.classification_report(y_test,dtree_pred_mms))
+print("Accuracy:",metrics.accuracy_score(y_test, dtree_pred_mms))
+print("Recall/Sensitivity/True Positive Rate:",metrics.recall_score(y_test, dtree_pred_mms))
+print("Precision:",metrics.precision_score(y_test, dtree_pred_mms))
+
+#ROC Curve:
+metrics.plot_roc_curve(dtree, xtest_scaler, y_test)
 
 
 
 
 #Random Forest
 from sklearn.ensemble import RandomForestClassifier
-rf_model = RandomForestClassifier(random_state=1)
-rf_model.fit(x_train,y_train)
-y_pred_rf = rf_model.predict(x_test)
-y_pred_rf_train = rf_model.predict(x_train)
-res(y_pred_rf,y_pred_rf_train)
+#with transformed data
+estimators = [10,50,80,100,150,200,250,300]
+
+rf = RandomForestClassifier(max_depth=3,random_state=5)
+hyperParam = [{'n_estimators':estimators}]
+
+gsv = GridSearchCV(rf,hyperParam,cv=5,verbose=1)
+best_model = gsv.fit(xtrain_scaler, y_train)
+rf_pred_mms = best_model.best_estimator_.predict(xtest_scaler)
+
+print("Best Accuracy :",best_model.score(xtest_scaler, y_test))
+
+#Confusion Matrix of model with transformed data
+plot_confusion_matrix(gsv, xtest_scaler, y_test)
+
+conf_metr = confusion_matrix(y_test, rf_pred_mms)
+
+print("Confusion Matrix: \n {}".format(conf_metr))
+print(metrics.classification_report(y_test,rf_pred_mms))
+print("Accuracy:",metrics.accuracy_score(y_test, rf_pred_mms))
+print("Recall/Sensitivity/True Positive Rate:",metrics.recall_score(y_test, rf_pred_mms))
+print("Precision:",metrics.precision_score(y_test, rf_pred_mms))
+
+#ROC Curve:
+metrics.plot_roc_curve(gsv, xtest_scaler, y_test)
 
 
-#Using the best parameter from GridSearchCV best parameters
-parameters = {'n_estimators':[60,70,80],'max_depth':[1,2,3,4,5,6],'min_samples_split':[3,4,5,6,7], 'min_samples_leaf':[1,2,3,4,5,6]}
-frt = GridSearchCV(rf_model, parameters, cv=10, n_jobs=-1)
-frt.fit(x_train,y_train)
-frt.best_params_
 
 
-rf_model = RandomForestClassifier(n_estimators=70, max_depth=6, min_samples_leaf=1, min_samples_split=7)
-rf_model.fit(x_train,y_train)
-y_pred_rf = rf_model.predict(x_test)
-y_pred_rf_train = rf_model.predict(x_train)
-res(y_pred_rf,y_pred_rf_train)
-
-#Decision trees frequently perform well on imbalanced data. Using RandomForest will be a better idea.
-
-
-
-
-#Finding the K value
+#KNN
 from sklearn.neighbors import KNeighborsClassifier
-import numpy as np
-error = []
+from sklearn import metrics
+from sklearn.metrics import plot_confusion_matrix, confusion_matrix
+#Using normal train and test data
+i = 1
+k = np.arange(1, 30, 1)
+k_val_acc = []
+for i in k:
+    knn = KNeighborsClassifier(n_neighbors=i)
+    knn.fit(x_train, y_train)
+    y_pred = knn.predict(x_test)
+    k_val_acc.append(metrics.accuracy_score(y_test, y_pred))
+    
+m = max(k_val_acc)
 
-for i in range(1,21,2):
-    knn =  KNeighborsClassifier(n_neighbors=i)
-    knn.fit(x_train,y_train)
-    preds = knn.predict(x_test)
-    error.append(np.mean(preds!=y_test))
+print("We got max accuracy of {0} when K = {1}". format(max(k_val_acc), [i+1 for i, j in enumerate(k_val_acc) if j == m]))
 
-plt.plot(range(1,21,2), error, linestyle = 'dashed', marker ='o', mfc= 'red')
+#Using transformed train and test data
+i = 1
+k = np.arange(1, 30, 1)
+k_val_acc_mms = []
+for i in k:
+    knn = KNeighborsClassifier(n_neighbors=i)
+    knn.fit(xtrain_scaler, y_train)
+    y_pred_mms = knn.predict(xtest_scaler)
+    k_val_acc_mms.append(metrics.accuracy_score(y_test, y_pred_mms))
+    
+m = max(k_val_acc_mms)
 
-#Using the elbow graph we can see that the k=5 will perform better in the first place so impute k = 5
-knn_model = KNeighborsClassifier(n_neighbors=5)
-knn_model.fit(x_train,y_train)
-y_pred_knn = knn_model.predict(x_test)
-y_pred_knn_train = knn_model.predict(x_train)
+print("We got max accuracy of {0} when K = {1}". format(max(k_val_acc_mms), [i+1 for i, j in enumerate(k_val_acc_mms) if j == m]))
 
-res(y_pred_knn,y_pred_knn_train)
+#Confusion Matrix of model with transformed data
+plot_confusion_matrix(knn, xtest_scaler, y_test)
 
+conf_metr = metrics.confusion_matrix(y_test, y_pred_mms)
 
+print("Confusion Matrix: \n {}".format(conf_metr))
+print(metrics.classification_report(y_test,y_pred_mms))
+print("Accuracy:",metrics.accuracy_score(y_test, y_pred_mms))
+print("Recall/Sensitivity/True Positive Rate:",metrics.recall_score(y_test, y_pred_mms))
+print("Precision:",metrics.precision_score(y_test, y_pred_mms))
 
-
-#Naive Bayes
-from sklearn.naive_bayes import GaussianNB
-nb_model = GaussianNB()
-nb_model.fit(x_train,y_train)
-y_pred_nb = nb_model.predict(x_test)
-y_pred_nb_train = nb_model.predict(x_train)
-res(y_pred_nb,y_pred_nb_train)
+#ROC Curve:
+metrics.plot_roc_curve(knn, xtest_scaler, y_test)
 
 
 
 
+#Support Vector Machine
+from sklearn.svm import SVC
 
+#Using transformed train and test data
+kernels = ['rbf','linear','poly','sigmoid']
+
+svc = SVC()
+hyperParam = [{'kernel':kernels}]
+
+gsv = GridSearchCV(svc,hyperParam,cv=5,verbose=1)
+best_model = gsv.fit(xtrain_scaler, y_train)
+svc_pred_mms = best_model.best_estimator_.predict(xtest_scaler)
+
+print("Best Accuracy :",best_model.score(xtest_scaler, y_test))
+
+#Confusion Matrix of model with transformed data
+plot_confusion_matrix(gsv, xtest_scaler, y_test)
+
+conf_metr = confusion_matrix(y_test, svc_pred_mms)
+
+print("Confusion Matrix: \n {}".format(conf_metr))
+print(metrics.classification_report(y_test,svc_pred_mms))
+print("Accuracy:",metrics.accuracy_score(y_test, svc_pred_mms))
+print("Recall/Sensitivity/True Positive Rate:",metrics.recall_score(y_test, svc_pred_mms))
+print("Precision:",metrics.precision_score(y_test, svc_pred_mms))
+
+#ROC Curve:
+metrics.plot_roc_curve(gsv, xtest_scaler, y_test)
+
+
+
+
+#Bagging with all classifiers using Cross Validation
 from sklearn.model_selection import cross_val_score
 from sklearn.ensemble import BaggingClassifier
+
+#Creating classifiers
 knn = KNeighborsClassifier()
 lg = LogisticRegression()
 dt = DecisionTreeClassifier()
 rf = RandomForestClassifier()
+svc = SVC()
 
-clf_array = [knn, lg, dt, rf]
+clf_array = [knn, lg, dt, rf,svc]
 
 for clf in clf_array:
     cc_scores = cross_val_score(clf, x, y, cv=10, n_jobs=-1)
@@ -162,3 +275,30 @@ for clf in clf_array:
     
     print("Accuracy of: {1:.3f}, std: (+/-) {2:.3f} [{0}]".format(clf.__class__.__name__,cc_scores.mean(), cc_scores.std()))
     print("Accuracy of: {1:.3f}, std: (+/-) {2:.3f} [Bagging {0}]\n".format(clf.__class__.__name__,bagging_scores.mean(), bagging_scores.std()))
+
+
+
+
+
+#Boosting with all classifiers using Cross Validation
+from sklearn.ensemble import AdaBoostClassifier
+from sklearn.ensemble import GradientBoostingClassifier
+from xgboost import XGBClassifier
+from mlxtend.classifier import EnsembleVoteClassifier
+
+#Creating classifiers
+knn = KNeighborsClassifier()
+lg = LogisticRegression()
+dt = DecisionTreeClassifier()
+rf = RandomForestClassifier()
+svc = SVC()
+ada_boost = AdaBoostClassifier()
+grad_boost = GradientBoostingClassifier()
+xgb_boost = XGBClassifier()
+boost_array = [ada_boost, grad_boost, xgb_boost]
+clf = [knn, lg, dt, rf,svc]
+eclf = EnsembleVoteClassifier(clfs=[ada_boost, grad_boost, xgb_boost], voting='hard')
+labels = ['Ada Boost', 'Grad Boost', 'XG Boost', 'Ensemble']
+for clf, label in zip([ada_boost, grad_boost, xgb_boost, eclf], labels):
+    scores = cross_val_score(clf, x, y, cv=10, scoring='accuracy')
+    print("Accuracy: {0:.3f}, std: (+/-) {1:.3f} [{2}]".format(scores.mean(), scores.std(), label))
