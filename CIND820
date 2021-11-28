@@ -24,29 +24,9 @@ xtest_scaler = MinMaxScaler().fit_transform(x_test)
 
 
 
-from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import confusion_matrix,classification_report,accuracy_score
-defaulters = data.copy()
-df_x = defaulters.drop(['def_pay','AGE'], axis=1)
-df_y = defaulters.def_pay
-
-model1 = LogisticRegression()
-model1.fit(x_train, y_train)
-
-y_pred = model1.predict(x_test)
-
-print(classification_report(y_pred, y_test))
-print(confusion_matrix(y_pred, y_test))
-print('\nAccuracy Score for model1: ', accuracy_score(y_pred,y_test))
-#We can see that All the examples are predicted to be negative to default 
-#payment next month with 78% accuracy whereas in the dataset we have 
-#980 observations that are expected to default payment.
-
-
-
-
-
 #Logistic model
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import confusion_matrix
 from sklearn.model_selection import GridSearchCV
 
 c_val = [0.001,0.01,0.1,0.5,1.0]
@@ -223,7 +203,7 @@ metrics.plot_roc_curve(knn, xtest_scaler, y_test)
 
 
 
-#Support Vector Machine
+#Support Vector Classifier
 from sklearn.svm import SVC
 
 #Using transformed train and test data
